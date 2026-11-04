@@ -43,15 +43,15 @@ nombres de instancia RDS sin guion bajo, conectarse a la EC2 desde el navegador 
 Crear 5 SG en la VPC por defecto. 📸 EP2-01 (lista de SG)
 | SG | Regla de entrada | Origen |
 |---|---|---|
-| `sg-ec2-a` | TCP 22 | tu IP pública /32 |
+| `mesatech-sg-ec2-a` | TCP 22 | tu IP pública /32 |
 | | TCP 8080 | 0.0.0.0/0 (API Gateway no tiene IP fija; el BFF valida el JWT de nuevo) |
-| `sg-ec2-b` | TCP 22 | tu IP /32 |
-| | TCP 8081 | `sg-ec2-a` (solo el BFF) |
-| `sg-ec2-c` | TCP 22 | tu IP /32 |
-| | TCP 5672 | `sg-ec2-a` y `sg-ec2-b` |
+| `mesatech-sg-ec2-b` | TCP 22 | tu IP /32 |
+| | TCP 8081 | `mesatech-sg-ec2-a` (solo el BFF) |
+| `mesatech-sg-ec2-c` | TCP 22 | tu IP /32 |
+| | TCP 5672 | `mesatech-sg-ec2-a` y `mesatech-sg-ec2-b` |
 | | TCP 15672 | tu IP /32 |
-| `sg-rds-catalogo` | TCP 3306 | `sg-ec2-a` |
-| `sg-rds-solicitudes` | TCP 3306 | `sg-ec2-b` |
+| `mesatech-sg-rds-catalogo` | TCP 3306 | `mesatech-sg-ec2-a` |
+| `mesatech-sg-rds-solicitudes` | TCP 3306 | `mesatech-sg-ec2-b` |
 
 No abrir 8082 hacia Internet: el catálogo solo lo llama el BFF desde la misma EC2 (localhost). 📸 EP2-02…EP2-06 (reglas de cada SG)
 
@@ -67,7 +67,7 @@ Nombres de instancia: `mesatech-rds-catalogo` y `mesatech-rds-solicitudes`.
 
 ## Paso 3. Tres EC2 (EC2 → Launch instance)
 Ubuntu Server 24.04 LTS, key pair `vockey`, VPC por defecto, auto-assign public IP, almacenamiento **20 GB** (el predeterminado de 8 GB queda justo con Java, Maven o Docker).
-En *Configuraciones de red* elegir **Seleccionar grupo de seguridad existente** y el `sg-ec2-*` que corresponda. **No** dejar "Crear grupo de seguridad":
+En *Configuraciones de red* elegir **Seleccionar grupo de seguridad existente** y el `mesatech-sg-ec2-*` que corresponda. **No** dejar "Crear grupo de seguridad":
 el asistente crea un `launch-wizard-N` con SSH abierto a `0.0.0.0/0` (se ve en las capturas del 19/10, donde además quedó HTTP 80 abierto por marcar "Permitir HTTP"). No marcar HTTP/HTTPS.
 Verificar que las tres instancias estén en la **misma VPC** (pestaña Networking de cada una) 📸 EP2-12b.
 
@@ -78,9 +78,9 @@ Verificar que las tres instancias estén en la **misma VPC** (pestaña Networkin
   Si lo necesitas, agrega al puerto 22 el rango de Instance Connect de us-east-1 (`18.206.107.24/29`; verificar en `ip-ranges.json`, servicio `EC2_INSTANCE_CONNECT`). Este modo no sirve para `scp`.
 | Nombre | Tipo | SG |
 |---|---|---|
-| `mesatech-ec2-a` | t3.small | `sg-ec2-a` |
-| `mesatech-ec2-b` | t3.small | `sg-ec2-b` |
-| `mesatech-ec2-c` | t3.medium | `sg-ec2-c` |
+| `mesatech-ec2-a` | t3.small | `mesatech-sg-ec2-a` |
+| `mesatech-ec2-b` | t3.small | `mesatech-sg-ec2-b` |
+| `mesatech-ec2-c` | t3.medium | `mesatech-sg-ec2-c` |
 
 Asignar una **Elastic IP** a `mesatech-ec2-a`. 📸 EP2-12 (lista de instancias con Instance ID, nombre, IP privada y SG), EP2-13 (Elastic IP asociada)
 
@@ -128,7 +128,7 @@ PUB_PASS='...' CONS_PASS='...' ./create-users.sh   # 📸 EP2-25 (usuarios y per
 ```
 Si el vhost, el exchange o la cola no aparecen tras `up -d`, crearlos desde la interfaz como en los apuntes del 19/10 (ver `infrastructure/rabbitmq/README.md`, plan B).
 Abrir `http://<IP-pública-EC2-C>:15672` (solo tu IP) y capturar: 📸 EP2-26 vhost `mesatech`, EP2-27 exchange `catalogo.exchange`, EP2-28 cola `solicitudes.catalogo.queue` durable, EP2-29 binding `categoria.creada`, EP2-30 usuarios y permisos. Mostrar `compose.yaml` **sin** `.env`: 📸 EP2-31.
-Mapeo puerto contenedor ↔ regla AWS: 📸 EP2-32 (`docker compose ps` junto a las reglas de `sg-ec2-c`).
+Mapeo puerto contenedor ↔ regla AWS: 📸 EP2-32 (`docker compose ps` junto a las reglas de `mesatech-sg-ec2-c`).
 
 ## Paso 6. Compilar y desplegar los servicios
 En tu PC (JDK 21): `mvn -DskipTests package` en `mesatech-bff`, `mesatech-catalogo` y `mesatech-solicitudes`; subir los JAR con `scp -i labsuser.pem`.

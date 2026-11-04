@@ -17,7 +17,7 @@ read -rsp "Contraseña maestra de las RDS (8+ caracteres, sin / ' \" @): " DBPAS
 cat <<MSG
 
 Se crearán (consumen crédito del Learner Lab mientras estén encendidos):
-  - 5 security groups (sg-ec2-a, sg-ec2-b, sg-ec2-c, sg-rds-catalogo, sg-rds-solicitudes)
+  - 5 security groups (mesatech-sg-ec2-a, -b, -c, mesatech-sg-rds-catalogo, mesatech-sg-rds-solicitudes)
   - 2 RDS MySQL db.t3.micro, privadas (mesatech-rds-catalogo, mesatech-rds-solicitudes)
   - 3 EC2 Ubuntu 24.04: mesatech-ec2-a (t3.small), mesatech-ec2-b (t3.small), mesatech-ec2-c (t3.medium), 20 GB
   - 1 Elastic IP asociada a mesatech-ec2-a
@@ -32,11 +32,11 @@ allow_cidr() { aws ec2 authorize-security-group-ingress --group-id "$1" --protoc
 allow_sg()   { aws ec2 authorize-security-group-ingress --group-id "$1" --protocol tcp --port "$2" --source-group "$3" >/dev/null; }
 
 echo "== Security groups =="
-SG_A=$(mk_sg sg-ec2-a "EC2-A catalogo y BFF")
-SG_B=$(mk_sg sg-ec2-b "EC2-B solicitudes")
-SG_C=$(mk_sg sg-ec2-c "EC2-C RabbitMQ")
-SG_RC=$(mk_sg sg-rds-catalogo "RDS catalogo")
-SG_RS=$(mk_sg sg-rds-solicitudes "RDS solicitudes")
+SG_A=$(mk_sg mesatech-sg-ec2-a "EC2-A catalogo y BFF")
+SG_B=$(mk_sg mesatech-sg-ec2-b "EC2-B solicitudes")
+SG_C=$(mk_sg mesatech-sg-ec2-c "EC2-C RabbitMQ")
+SG_RC=$(mk_sg mesatech-sg-rds-catalogo "RDS catalogo")
+SG_RS=$(mk_sg mesatech-sg-rds-solicitudes "RDS solicitudes")
 allow_cidr "$SG_A" 22 "$MYIP";  allow_cidr "$SG_A" 8080 0.0.0.0/0     # 8080: API Gateway no tiene IP fija; el BFF valida el JWT
 allow_cidr "$SG_B" 22 "$MYIP";  allow_sg "$SG_B" 8081 "$SG_A"          # solo el BFF llama a solicitudes
 allow_cidr "$SG_C" 22 "$MYIP";  allow_cidr "$SG_C" 15672 "$MYIP"
