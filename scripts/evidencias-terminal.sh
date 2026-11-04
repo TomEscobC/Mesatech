@@ -3,7 +3,7 @@
 # Uso: bash scripts/evidencias-terminal.sh <n>     (sin n: lista las secciones)
 # Requiere: ~/Descargas/labsuser.pem y ~/.mesatech_secrets (no se imprimen contraseñas).
 K=${KEY:-$HOME/Descargas/labsuser.pem}
-A=3.234.33.87; B=100.59.199.41; C=3.80.48.82; CP=172.31.30.196
+A=3.234.33.87; B=18.206.171.225; C=3.90.203.34; CP=172.31.30.196
 CAT=mesatech-rds-catalogo.cstbnwfayxx4.us-east-1.rds.amazonaws.com
 SOL=mesatech-rds-solicitudes.cstbnwfayxx4.us-east-1.rds.amazonaws.com
 set -a; . ~/.mesatech_secrets 2>/dev/null; set +a

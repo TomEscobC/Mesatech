@@ -3,7 +3,7 @@
 # Uso: bash scripts/p2-traza.sh <codigo-categoria> [ventana]   Ej: bash scripts/p2-traza.sh EP2-A "20 min ago"
 COD="${1:?codigo de categoria, ej. EP2-A}"; DESDE="${2:-20 min ago}"
 K=${KEY:-$HOME/Descargas/labsuser.pem}
-A=3.234.33.87; B=100.59.199.41; C=3.80.48.82
+A=3.234.33.87; B=18.206.171.225; C=3.90.203.34
 CAT=mesatech-rds-catalogo.cstbnwfayxx4.us-east-1.rds.amazonaws.com
 SOL=mesatech-rds-solicitudes.cstbnwfayxx4.us-east-1.rds.amazonaws.com
 set -a; . ~/.mesatech_secrets; set +a

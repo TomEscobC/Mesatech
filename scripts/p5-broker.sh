@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # P5: reinicio del broker conservando volumen y hostname. Fases: antes | recrear | despues
 # Uso: bash scripts/p5-broker.sh <fase>
-K=${KEY:-$HOME/Descargas/labsuser.pem}; C=3.80.48.82
+K=${KEY:-$HOME/Descargas/labsuser.pem}; C=3.90.203.34
 S="ssh -i $K -o StrictHostKeyChecking=accept-new -o LogLevel=ERROR ubuntu@$C"
 ESTADO='echo "$ docker volume ls | grep rabbitmq"; docker volume ls | grep rabbitmq
 echo "$ docker inspect rabbitmq  (hostname, id corto, creado)"; docker inspect rabbitmq -f "hostname={{.Config.Hostname}}  id={{printf \"%.12s\" .Id}}  creado={{.Created}}"
