@@ -33,7 +33,9 @@ nombres de instancia RDS sin guion bajo, conectarse a la EC2 desde el navegador 
 
 ## Paso 0. Datos previos (EP1)
 1. Entra ID listo según `infrastructure/entra-id/azure-entra-id-guide.md` (API `api-cloud-native` con scope `access_as_user` y App Roles; SPA con redirect `http://localhost:3000`). 📸 EP1-01…EP1-05
-2. Anotar fuera del repo: Tenant ID, Client ID de la SPA, audiencia `api://api-cloud-native`.
+2. Datos de Entra ya configurados por el equipo (tenant `dsy1107seccion001d`, documento `entra-id-mesatech.docx`): Tenant ID, Client ID de la SPA, Client ID de la API y su URI.
+   **Ojo:** el portal rechazó `api://api-cloud-native`; el URI real de la API es `api://<Client-ID-de-la-API>` y el scope completo `api://<Client-ID-de-la-API>/access_as_user`. Donde esta guía
+   o los archivos del repo digan `api://api-cloud-native`, usar el valor real.
 3. Los apuntes del 02/09 cubren **solo el registro de la SPA** (Registros de aplicaciones → Nuevo registro → Authentication → "Aplicación de página única" → URI `http://localhost:3000`).
    Para EP1 falta además el registro de la **API** (`api-cloud-native`: exponer el scope `access_as_user` y crear los App Roles Cliente, Operador y Administrador, asignarlos a los usuarios
    en Aplicaciones empresariales) y dar permiso a la SPA sobre ese scope. Sin los App Roles el token no trae `roles` y el frontend muestra "Sin rol asignado".
@@ -151,7 +153,7 @@ Flujo de clics basado en los apuntes del 14/08 (adaptado a nuestras rutas y con 
    - `/v2/{proxy+}` → `http://<Elastic-IP-EC2-A>:8080/v2/{proxy}`
    (con `http://` explícito, sin `www.` y **conservando el prefijo** `/v1` o `/v2`; si se omite, el BFF recibe `/solicitudes` y responde 404).
 4. **Autorización → Administrar autorizadores → Crear**: tipo **JWT**, fuente de identidad `$request.header.Authorization`, Issuer `https://login.microsoftonline.com/<tenant-id>/v2.0`,
-   Audience `api://api-cloud-native`. Luego **Asociar** el autorizador a `/v1/{proxy+}` y `/v2/{proxy+}`.
+   Audience: agregar **dos** valores, `api://<Client-ID-de-la-API>` y `<Client-ID-de-la-API>` (los tokens v2 suelen traer el GUID en `aud`; el documento de Entra indica el URI. Confirmar con un token real y dejar el que coincida; tener ambos no resta seguridad). Luego **Asociar** el autorizador a `/v1/{proxy+}` y `/v2/{proxy+}`.
 5. **CORS → Configurar**: origen `http://localhost:3000`, métodos GET, POST, PUT, DELETE, OPTIONS, headers `authorization` **y** `content-type`, sin credenciales.
    En la captura del 14/08 se dejó origen `*` y solo el header `content-type`: sirve para una API pública sin token, pero con `Authorization: Bearer` el navegador bloquea la petición en el preflight
    si `authorization` no está permitido. Es el error más probable al conectar React.

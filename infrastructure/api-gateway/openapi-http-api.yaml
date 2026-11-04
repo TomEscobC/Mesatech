@@ -56,4 +56,5 @@ components:
         jwtConfiguration:
           issuer: "https://login.microsoftonline.com/{tenant_id}/v2.0"
           audience:
-            - "api://api-cloud-native"
+            - "api://{api_app_id}"
+            - "{api_app_id}"

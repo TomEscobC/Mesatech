@@ -20,7 +20,7 @@ AWS API Gateway es el **único punto de entrada** público para el frontend Reac
 3. **Name:** `EntraIdJwtAuthorizer`
 4. **Identity source:** `$request.header.Authorization`
 5. **Issuer URL:** `https://login.microsoftonline.com/<TENANT_ID>/v2.0`
-6. **Audience:** `api://api-cloud-native` (o el Client ID de la API en Entra ID)
+6. **Audience:** `api://<Client-ID-de-la-API>` y tambien `<Client-ID-de-la-API>` (`api://api-cloud-native` fue rechazado por el portal)
 7. Presionar **Create**.
 
 ---
