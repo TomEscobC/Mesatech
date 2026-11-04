@@ -26,6 +26,9 @@ for V in v1 v2; do
     --integration-uri "http://$BFF_HOST:8080/$V/{proxy}" --payload-format-version 1.0 --query IntegrationId --output text)
   aws apigatewayv2 create-route --api-id "$API_ID" --route-key "ANY /$V/{proxy+}" --target "integrations/$INT" \
     --authorization-type JWT --authorizer-id "$AUTH_ID" >/dev/null
+  # Preflight CORS: el navegador envía OPTIONS sin token; si pasara por el authorizer respondería 401 y React quedaría bloqueado
+  aws apigatewayv2 create-route --api-id "$API_ID" --route-key "OPTIONS /$V/{proxy+}" --target "integrations/$INT" \
+    --authorization-type NONE >/dev/null
 done
 
 aws apigatewayv2 create-stage --api-id "$API_ID" --stage-name '$default' --auto-deploy >/dev/null
