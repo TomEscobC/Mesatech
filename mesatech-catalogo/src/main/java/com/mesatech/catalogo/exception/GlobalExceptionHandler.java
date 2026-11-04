@@ -1,5 +1,6 @@
 package com.mesatech.catalogo.exception;
 
+import com.mesatech.catalogo.messaging.EventoNoConfirmadoException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -32,6 +33,19 @@ public class GlobalExceptionHandler {
         body.put("error", "Recurso duplicado");
         body.put("message", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    @ExceptionHandler(EventoNoConfirmadoException.class)
+    public ResponseEntity<Map<String, Object>> handleEventoNoConfirmado(EventoNoConfirmadoException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.SERVICE_UNAVAILABLE.value());
+        body.put("error", "Publicación no confirmada");
+        body.put("message", "La categoría pudo quedar guardada en la base de datos, pero no se confirmó su publicación en RabbitMQ. "
+                + "No se revirtió automáticamente; Solicitudes puede no tener todavía la copia.");
+        body.put("categoriaId", ex.getCategoriaId());
+        body.put("eventId", ex.getEventId());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

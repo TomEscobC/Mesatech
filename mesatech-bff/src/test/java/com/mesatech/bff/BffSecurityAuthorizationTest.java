@@ -80,6 +80,20 @@ class BffSecurityAuthorizationTest {
     }
 
     @Test
+    @DisplayName("Escenario 2: JWT con firma inválida o expirado debe ser rechazado con 401 (sin filtros que omitan la validación)")
+    void testJwtInvalidoRechazado() throws Exception {
+        when(jwtDecoder.decode(any())).thenThrow(new org.springframework.security.oauth2.jwt.BadJwtException("Firma inválida"));
+
+        // Token con claims "convincentes" pero firma falsa: antes lo aceptaba DemoAuthFilter
+        String forjado = "eyJhbGciOiJSUzI1NiJ9."
+                + "eyJpc3MiOiJodHRwczovL2xvZ2luLm1pY3Jvc29mdG9ubGluZS5jb20vIiwicHJlZmVycmVkX3VzZXJuYW1lIjoiYWRtaW5AY3VyenVhMS5vbm1pY3Jvc29mdC5jb20ifQ."
+                + "firma-falsa";
+
+        mockMvc.perform(get("/v1/solicitudes").header("Authorization", "Bearer " + forjado))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     @DisplayName("Escenario 3: Usuario con rol Cliente intentando crear catálogo debe ser rechazado con 403 Forbidden")
     void testClienteRechazadoEnCatalogo() throws Exception {
         mockMvc.perform(post("/v1/catalogo/categorias")

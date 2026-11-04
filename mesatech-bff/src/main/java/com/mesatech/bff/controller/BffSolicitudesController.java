@@ -38,6 +38,11 @@ public class BffSolicitudesController {
         return ResponseEntity.ok(solicitudesClient.listarSolicitudesV1(solicitanteEfectivo, usuarioAsignado, estado));
     }
 
+    @GetMapping("/v1/solicitudes/categorias")
+    public ResponseEntity<Object> listarCategoriasLocales() {
+        return ResponseEntity.ok(solicitudesClient.listarCategoriasLocales());
+    }
+
     @GetMapping("/v1/solicitudes/{id}")
     public ResponseEntity<Object> obtenerPorIdV1(@PathVariable Long id) {
         return ResponseEntity.ok(solicitudesClient.obtenerPorIdV1(id));

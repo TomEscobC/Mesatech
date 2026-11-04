@@ -32,6 +32,15 @@ public class SolicitudesClient {
                 .body(new ParameterizedTypeReference<Object>() {});
     }
 
+    /** Categorías locales de Solicitudes (copia recibida por RabbitMQ). */
+    public Object listarCategoriasLocales() {
+        return restClient.get()
+                .uri("/v1/solicitudes/categorias")
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .body(new ParameterizedTypeReference<Object>() {});
+    }
+
     public Object obtenerPorIdV1(Long id) {
         return restClient.get()
                 .uri("/v1/solicitudes/{id}", id)

@@ -1,9 +1,9 @@
 import axios from "axios";
-import { tokenRequest, loginRequest } from "../auth/authConfig";
-import { mockRepo } from "./mockData";
+import { InteractionRequiredAuthError } from "@azure/msal-browser";
+import { tokenRequest } from "../auth/authConfig";
 
-// URL base de AWS API Gateway (o BFF directo en desarrollo)
-export let API_BASE_URL = process.env.REACT_APP_API_GATEWAY_URL || "http://localhost:8080";
+// El frontend consume el backend SOLO a través de AWS API Gateway (HTTP API).
+export const API_BASE_URL = process.env.REACT_APP_API_GATEWAY_URL || "http://localhost:8080";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -13,207 +13,68 @@ const apiClient = axios.create({
   }
 });
 
-export const setApiBaseUrl = (newUrl) => {
-  API_BASE_URL = newUrl;
-  apiClient.defaults.baseURL = newUrl;
-};
-
-export const getApiBaseUrl = () => API_BASE_URL;
-
 let globalMsalInstance = null;
-let mockToken = null;
-let activeRoleHeader = null;
 
 export const setMsalInstance = (instance) => {
   globalMsalInstance = instance;
 };
 
-export const setMockToken = (token) => {
-  mockToken = token;
+/**
+ * Adquiere el ACCESS TOKEN de la API (scope access_as_user) para la cuenta activa.
+ * Es el token que valida API Gateway (JWT Authorizer) y luego el BFF.
+ * Nunca se envía el ID token a la API.
+ */
+export const acquireApiToken = async () => {
+  if (!globalMsalInstance) return null;
+  const account = globalMsalInstance.getActiveAccount() || globalMsalInstance.getAllAccounts()[0];
+  if (!account) return null;
+  try {
+    const res = await globalMsalInstance.acquireTokenSilent({ ...tokenRequest, account });
+    return res.accessToken;
+  } catch (err) {
+    if (err instanceof InteractionRequiredAuthError) {
+      const res = await globalMsalInstance.acquireTokenPopup({ ...tokenRequest, account });
+      return res.accessToken;
+    }
+    throw err;
+  }
 };
 
-export const setActiveRoleHeader = (role) => {
-  activeRoleHeader = role;
-};
-
-// Interceptor para inyectar automáticamente el Bearer Access Token y X-Active-Role
+// Interceptor: adjunta Authorization: Bearer <access_token> en cada llamada
 apiClient.interceptors.request.use(
   async (config) => {
-    if (activeRoleHeader) {
-      config.headers["X-Active-Role"] = activeRoleHeader;
-    }
-    try {
-      // 1. Si hay un mock token activo (modo demo offline docente), lo usamos
-      if (mockToken) {
-        config.headers.Authorization = `Bearer ${mockToken}`;
-        return config;
-      }
-
-      // 2. Si hay sesión activa en MSAL, adquirimos el Access Token silenciosamente
-      if (globalMsalInstance) {
-        const accounts = globalMsalInstance.getAllAccounts();
-        if (accounts.length > 0) {
-          const request = {
-            ...tokenRequest,
-            account: accounts[0]
-          };
-          try {
-            const response = await globalMsalInstance.acquireTokenSilent(request);
-            const tokenToUse = response.idToken || response.accessToken || accounts[0]?.idToken;
-            if (tokenToUse) {
-              config.headers.Authorization = `Bearer ${tokenToUse}`;
-            }
-          } catch (scopeErr) {
-            // Fallback con loginRequest si el scope de API aún no fue aprobado
-            const fallbackResponse = await globalMsalInstance.acquireTokenSilent({
-              ...loginRequest,
-              account: accounts[0]
-            });
-            const tokenToUse = fallbackResponse.idToken || fallbackResponse.accessToken || accounts[0]?.idToken;
-            if (tokenToUse) {
-              config.headers.Authorization = `Bearer ${tokenToUse}`;
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.warn("No se pudo adquirir el token silenciosamente:", error);
+    const token = await acquireApiToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// --- Servicios de Solicitudes ---
+// --- Servicios de Solicitudes (los errores del backend se propagan: no hay datos simulados) ---
 export const ticketService = {
-  listarV1: async (params) => {
-    try {
-      return await apiClient.get("/v1/solicitudes", { params });
-    } catch (err) {
-      console.warn("Backend no disponible temporalmente, cargando datos semilla de prueba:", err.message);
-      return { data: mockRepo.getTickets(params, "v1") };
-    }
-  },
-
-  listarV2: async (params) => {
-    try {
-      return await apiClient.get("/v2/solicitudes", { params });
-    } catch (err) {
-      console.warn("Backend no disponible temporalmente, cargando datos semilla de prueba v2:", err.message);
-      return { data: mockRepo.getTickets(params, "v2") };
-    }
-  },
-
-  obtenerPorIdV1: async (id) => {
-    try {
-      return await apiClient.get(`/v1/solicitudes/${id}`);
-    } catch (err) {
-      return { data: mockRepo.getTicketById(id) };
-    }
-  },
-
-  obtenerPorIdV2: async (id) => {
-    try {
-      return await apiClient.get(`/v2/solicitudes/${id}`);
-    } catch (err) {
-      return { data: mockRepo.getTicketById(id) };
-    }
-  },
-
-  crear: async (data) => {
-    try {
-      return await apiClient.post("/v1/solicitudes", data);
-    } catch (err) {
-      return { data: mockRepo.createTicket(data) };
-    }
-  },
-
-  cambiarEstado: async (id, data) => {
-    try {
-      return await apiClient.put(`/v1/solicitudes/${id}/estado`, data);
-    } catch (err) {
-      // Si fue rechazo 422 por regla de negocio, propagarlo
-      if (err.response && err.response.status === 422) {
-        throw err;
-      }
-      return { data: mockRepo.changeTicketState(id, data) };
-    }
-  },
-
-  asignarOperador: async (id, data) => {
-    try {
-      return await apiClient.put(`/v1/solicitudes/${id}/asignar`, data);
-    } catch (err) {
-      return { data: mockRepo.assignTicket(id, data) };
-    }
-  }
+  listarV1: (params) => apiClient.get("/v1/solicitudes", { params }),
+  listarV2: (params) => apiClient.get("/v2/solicitudes", { params }),
+  // Categorías disponibles en Solicitudes (copia local recibida por RabbitMQ)
+  listarCategoriasLocales: () => apiClient.get("/v1/solicitudes/categorias"),
+  obtenerPorIdV1: (id) => apiClient.get(`/v1/solicitudes/${id}`),
+  obtenerPorIdV2: (id) => apiClient.get(`/v2/solicitudes/${id}`),
+  crear: (data) => apiClient.post("/v1/solicitudes", data),
+  cambiarEstado: (id, data) => apiClient.put(`/v1/solicitudes/${id}/estado`, data),
+  asignarOperador: (id, data) => apiClient.put(`/v1/solicitudes/${id}/asignar`, data)
 };
 
 // --- Servicios de Catálogo ---
 export const catalogService = {
-  listarCategorias: async (soloActivas = false) => {
-    try {
-      return await apiClient.get("/v1/catalogo/categorias", { params: { soloActivas } });
-    } catch (err) {
-      return { data: mockRepo.getCategories(soloActivas) };
-    }
-  },
-
-  crearCategoria: async (data) => {
-    try {
-      return await apiClient.post("/v1/catalogo/categorias", data);
-    } catch (err) {
-      return { data: mockRepo.createCategory(data) };
-    }
-  },
-
-  actualizarCategoria: async (id, data) => {
-    try {
-      return await apiClient.put(`/v1/catalogo/categorias/${id}`, data);
-    } catch (err) {
-      return { data: mockRepo.updateCategory(id, data) };
-    }
-  },
-
-  eliminarCategoria: async (id) => {
-    try {
-      return await apiClient.delete(`/v1/catalogo/categorias/${id}`);
-    } catch (err) {
-      return { data: mockRepo.deleteCategory(id) };
-    }
-  },
-
-  listarPrioridades: async (soloActivas = false) => {
-    try {
-      return await apiClient.get("/v1/catalogo/prioridades", { params: { soloActivas } });
-    } catch (err) {
-      return { data: mockRepo.getPriorities(soloActivas) };
-    }
-  },
-
-  crearPrioridad: async (data) => {
-    try {
-      return await apiClient.post("/v1/catalogo/prioridades", data);
-    } catch (err) {
-      return { data: mockRepo.createPriority(data) };
-    }
-  },
-
-  actualizarPrioridad: async (id, data) => {
-    try {
-      return await apiClient.put(`/v1/catalogo/prioridades/${id}`, data);
-    } catch (err) {
-      return { data: mockRepo.updatePriority(id, data) };
-    }
-  },
-
-  eliminarPrioridad: async (id) => {
-    try {
-      return await apiClient.delete(`/v1/catalogo/prioridades/${id}`);
-    } catch (err) {
-      return { data: mockRepo.deletePriority(id) };
-    }
-  }
+  listarCategorias: (soloActivas = false) => apiClient.get("/v1/catalogo/categorias", { params: { soloActivas } }),
+  crearCategoria: (data) => apiClient.post("/v1/catalogo/categorias", data),
+  actualizarCategoria: (id, data) => apiClient.put(`/v1/catalogo/categorias/${id}`, data),
+  eliminarCategoria: (id) => apiClient.delete(`/v1/catalogo/categorias/${id}`),
+  listarPrioridades: (soloActivas = false) => apiClient.get("/v1/catalogo/prioridades", { params: { soloActivas } }),
+  crearPrioridad: (data) => apiClient.post("/v1/catalogo/prioridades", data),
+  actualizarPrioridad: (id, data) => apiClient.put(`/v1/catalogo/prioridades/${id}`, data),
+  eliminarPrioridad: (id) => apiClient.delete(`/v1/catalogo/prioridades/${id}`)
 };
 
 // --- Servicio de Inspección de Token / Perfil ---

@@ -1,0 +1,13 @@
+{
+  "rabbit_version": "4.0",
+  "vhosts": [ { "name": "mesatech" } ],
+  "exchanges": [
+    { "name": "catalogo.exchange", "vhost": "mesatech", "type": "direct", "durable": true, "auto_delete": false, "internal": false, "arguments": {} }
+  ],
+  "queues": [
+    { "name": "solicitudes.catalogo.queue", "vhost": "mesatech", "durable": true, "auto_delete": false, "arguments": { "x-queue-type": "classic" } }
+  ],
+  "bindings": [
+    { "source": "catalogo.exchange", "vhost": "mesatech", "destination": "solicitudes.catalogo.queue", "destination_type": "queue", "routing_key": "categoria.creada", "arguments": {} }
+  ]
+}
