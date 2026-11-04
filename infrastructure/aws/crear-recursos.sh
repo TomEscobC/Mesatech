@@ -67,7 +67,8 @@ ALLOC=$(aws ec2 allocate-address --domain vpc --query AllocationId --output text
 aws ec2 associate-address --instance-id "$EC2_A" --allocation-id "$ALLOC" >/dev/null
 
 echo "== Esperando a las RDS (puede tardar 5-15 min) =="
-aws rds wait db-instance-available --db-instance-identifier mesatech-rds-catalogo mesatech-rds-solicitudes
+aws rds wait db-instance-available --db-instance-identifier mesatech-rds-catalogo
+aws rds wait db-instance-available --db-instance-identifier mesatech-rds-solicitudes
 
 echo
 echo "================ RESUMEN (sin contraseñas): copiar y pegar en el chat ================"
