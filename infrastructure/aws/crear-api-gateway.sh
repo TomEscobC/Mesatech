@@ -3,10 +3,14 @@
 # Los IDs de Entra no son secretos. Ajustar si cambian.
 set -euo pipefail
 export AWS_DEFAULT_REGION=us-east-1
-TENANT=051da365-8e26-4bdb-86fb-394e76049f92
+TENANT=051da654-8e26-4bd0-86fb-394e76049f92
 API_APP=a1dae715-5db4-4aff-86c2-4a53d0cd850a
 BFF_HOST=3.234.33.87          # Elastic IP de mesatech-ec2-a (BFF en :8080)
 ORIGIN=http://localhost:3000
+
+# Evita duplicados si una ejecución anterior falló a medias
+EXIST=$(aws apigatewayv2 get-apis --query "Items[?Name=='mesatech-api'].ApiId" --output text)
+if [ -n "$EXIST" ]; then echo "Ya existe una API mesatech-api ($EXIST). Elimínala con: aws apigatewayv2 delete-api --api-id $EXIST"; exit 1; fi
 
 API_ID=$(aws apigatewayv2 create-api --name mesatech-api --protocol-type HTTP \
   --cors-configuration "{\"AllowOrigins\":[\"$ORIGIN\"],\"AllowMethods\":[\"GET\",\"POST\",\"PUT\",\"DELETE\",\"OPTIONS\"],\"AllowHeaders\":[\"authorization\",\"content-type\"],\"MaxAge\":300}" \
