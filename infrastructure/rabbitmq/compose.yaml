@@ -12,9 +12,9 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_ADMIN_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_ADMIN_PASSWORD}
-      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbitmq_management load_definitions \"/etc/rabbitmq/definitions.json\""
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq     # volumen persistente (mensajes y metadatos sobreviven a recrear el contenedor)
+      - ./rabbitmq.conf:/etc/rabbitmq/conf.d/90-mesatech.conf:ro   # indica cargar definitions.json al arrancar
       - ./definitions.json:/etc/rabbitmq/definitions.json:ro
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
