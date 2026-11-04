@@ -35,4 +35,9 @@ aws apigatewayv2 create-stage --api-id "$API_ID" --stage-name '$default' --auto-
 URL="https://$API_ID.execute-api.us-east-1.amazonaws.com"
 echo "API_ID=$API_ID  AUTHORIZER=$AUTH_ID"
 echo "URL de invocación: $URL"
-echo "--- sin token (esperado 401):"; curl -s -o /dev/null -w "HTTP %{http_code}\n" "$URL/v1/solicitudes"
+# Tras crear rutas y stage, la API tarda unos segundos en responder: antes de eso devuelve 404 aunque la ruta exista. Reintentar.
+echo "--- sin token (esperado 401; 404 = aún propagando):"
+for i in 1 2 3 4 5 6; do
+  CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL/v1/solicitudes")
+  echo "intento $i: HTTP $CODE"; [ "$CODE" != "404" ] && break; sleep 5
+done
