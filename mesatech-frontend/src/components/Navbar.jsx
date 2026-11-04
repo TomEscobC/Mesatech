@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { Cloud, LogIn, LogOut, ShieldCheck, Server } from "lucide-react";
-import { getApiBaseUrl, setApiBaseUrl } from "../services/apiService";
+import React from "react";
+import { Cloud, LogIn, LogOut, ShieldCheck } from "lucide-react";
 
 export const Navbar = ({
   isAuthenticated,
@@ -10,14 +9,6 @@ export const Navbar = ({
   onLogout,
   onOpenTokenModal
 }) => {
-  const [currentUrl, setCurrentUrl] = useState(getApiBaseUrl());
-
-  const handleUrlChange = (e) => {
-    const newUrl = e.target.value;
-    setApiBaseUrl(newUrl);
-    setCurrentUrl(newUrl);
-  };
-
   const getRoleBadgeStyle = (role) => {
     switch (role) {
       case "Administrador":
@@ -45,21 +36,6 @@ export const Navbar = ({
       </div>
 
       <div className="nav-actions">
-        {/* Selector de Endpoint Backend para Defensa y Pruebas */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", backgroundColor: "#f1f5f9", padding: "0.25rem 0.5rem", borderRadius: "0.375rem" }}>
-          <Server size={14} color="#64748b" />
-          <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>API:</span>
-          <select
-            className="form-control"
-            style={{ padding: "0.15rem 0.4rem", fontSize: "0.75rem", width: "auto", border: "1px solid #cbd5e1", borderRadius: "0.25rem" }}
-            value={currentUrl}
-            onChange={handleUrlChange}
-          >
-            <option value="http://98.80.12.101:8080">EC2 BFF Directo (:8080)</option>
-            <option value="https://8i73hoe194.execute-api.us-east-1.amazonaws.com">AWS API Gateway (HTTP API)</option>
-          </select>
-        </div>
-
         {isAuthenticated ? (
           <>
             {/* Inspector de Claims del Token */}

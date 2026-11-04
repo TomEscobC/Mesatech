@@ -2,6 +2,7 @@ package com.mesatech.catalogo.controller;
 
 import com.mesatech.catalogo.dto.CategoriaDTO;
 import com.mesatech.catalogo.dto.PrioridadDTO;
+import com.mesatech.catalogo.messaging.CategoriaEventPublisher;
 import com.mesatech.catalogo.service.CatalogoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -15,9 +16,11 @@ import java.util.List;
 public class CatalogoController {
 
     private final CatalogoService catalogoService;
+    private final CategoriaEventPublisher eventPublisher;
 
-    public CatalogoController(CatalogoService catalogoService) {
+    public CatalogoController(CatalogoService catalogoService, CategoriaEventPublisher eventPublisher) {
         this.catalogoService = catalogoService;
+        this.eventPublisher = eventPublisher;
     }
 
     // --- Categorías ---
@@ -33,7 +36,11 @@ public class CatalogoController {
 
     @PostMapping("/categorias")
     public ResponseEntity<CategoriaDTO> crearCategoria(@Valid @RequestBody CategoriaDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(catalogoService.crearCategoria(dto));
+        // 1) Persistir (la transacción termina y hace commit dentro del servicio)
+        CategoriaDTO creada = catalogoService.crearCategoria(dto);
+        // 2) Publicar como operación separada; si falla, el registro ya quedó guardado (ver GlobalExceptionHandler)
+        eventPublisher.publicarCategoriaCreada(creada);
+        return ResponseEntity.status(HttpStatus.CREATED).body(creada);
     }
 
     @PutMapping("/categorias/{id}")

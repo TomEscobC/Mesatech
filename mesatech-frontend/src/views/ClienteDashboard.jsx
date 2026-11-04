@@ -15,7 +15,7 @@ export const ClienteDashboard = ({ currentUser }) => {
   const [formData, setFormData] = useState({
     titulo: "",
     descripcion: "",
-    categoria: "",
+    categoriaId: "",
     prioridad: ""
   });
 
@@ -28,14 +28,14 @@ export const ClienteDashboard = ({ currentUser }) => {
     try {
       const [ticketsRes, catRes, prioRes] = await Promise.all([
         ticketService.listarV1(),
-        catalogService.listarCategorias(true),
+        ticketService.listarCategoriasLocales(),
         catalogService.listarPrioridades(true)
       ]);
       setSolicitudes(Array.isArray(ticketsRes.data) ? ticketsRes.data : []);
       setCategorias(Array.isArray(catRes.data) ? catRes.data : []);
       setPrioridades(Array.isArray(prioRes.data) ? prioRes.data : []);
-      if (catRes.data?.length > 0 && !formData.categoria) {
-        setFormData(prev => ({ ...prev, categoria: catRes.data[0].nombre }));
+      if (catRes.data?.length > 0 && !formData.categoriaId) {
+        setFormData(prev => ({ ...prev, categoriaId: catRes.data[0].categoriaId }));
       }
       if (prioRes.data?.length > 0 && !formData.prioridad) {
         setFormData(prev => ({ ...prev, prioridad: prioRes.data[0].nombre }));
@@ -57,7 +57,7 @@ export const ClienteDashboard = ({ currentUser }) => {
       });
       setMensaje({ tipo: "success", texto: "¡Solicitud registrada exitosamente en estado CREADA!" });
       setShowModal(false);
-      setFormData({ titulo: "", descripcion: "", categoria: categorias[0]?.nombre || "", prioridad: prioridades[0]?.nombre || "" });
+      setFormData({ titulo: "", descripcion: "", categoriaId: categorias[0]?.categoriaId || "", prioridad: prioridades[0]?.nombre || "" });
       cargarDatos();
     } catch (err) {
       setMensaje({ tipo: "error", texto: "Error al crear la solicitud: " + (err.response?.data?.message || err.message) });
@@ -195,13 +195,17 @@ export const ClienteDashboard = ({ currentUser }) => {
                   <label className="form-label">Categoría *</label>
                   <select
                     className="form-control"
-                    value={formData.categoria}
-                    onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
+                    value={formData.categoriaId}
+                    onChange={(e) => setFormData({ ...formData, categoriaId: Number(e.target.value) })}
                   >
                     {categorias.map((c) => (
-                      <option key={c.id} value={c.nombre}>{c.nombre}</option>
+                      <option key={c.categoriaId} value={c.categoriaId}>{c.nombre}</option>
                     ))}
                   </select>
+                  <small style={{ color: "#64748b" }}>
+                    Solo aparecen las categorías ya sincronizadas desde Catálogo (la copia es asíncrona).{" "}
+                    <button type="button" className="btn btn-outline btn-sm" onClick={cargarDatos}>Actualizar</button>
+                  </small>
                 </div>
 
                 <div className="form-group">

@@ -4,7 +4,10 @@ import com.mesatech.solicitudes.dto.AsignarOperadorDTO;
 import com.mesatech.solicitudes.dto.CambiarEstadoDTO;
 import com.mesatech.solicitudes.dto.SolicitudRequestDTO;
 import com.mesatech.solicitudes.dto.SolicitudResponseV1DTO;
+import com.mesatech.solicitudes.exception.BusinessRuleException;
+import com.mesatech.solicitudes.model.CategoriaCopia;
 import com.mesatech.solicitudes.model.EstadoSolicitud;
+import com.mesatech.solicitudes.repository.CategoriaCopiaRepository;
 import com.mesatech.solicitudes.service.SolicitudService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -18,9 +21,17 @@ import java.util.List;
 public class SolicitudV1Controller {
 
     private final SolicitudService solicitudService;
+    private final CategoriaCopiaRepository categoriaCopiaRepository;
 
-    public SolicitudV1Controller(SolicitudService solicitudService) {
+    public SolicitudV1Controller(SolicitudService solicitudService, CategoriaCopiaRepository categoriaCopiaRepository) {
         this.solicitudService = solicitudService;
+        this.categoriaCopiaRepository = categoriaCopiaRepository;
+    }
+
+    /** Categorías disponibles localmente (copia recibida por RabbitMQ). No consulta la BD de Catálogo. */
+    @GetMapping("/categorias")
+    public ResponseEntity<List<CategoriaCopia>> listarCategoriasLocales() {
+        return ResponseEntity.ok(categoriaCopiaRepository.findAllByOrderByNombreAsc());
     }
 
     @GetMapping
@@ -38,6 +49,15 @@ public class SolicitudV1Controller {
 
     @PostMapping
     public ResponseEntity<SolicitudResponseV1DTO> crearSolicitud(@Valid @RequestBody SolicitudRequestDTO dto) {
+        if (dto.getCategoriaId() != null) {
+            CategoriaCopia copia = categoriaCopiaRepository.findById(dto.getCategoriaId())
+                    .orElseThrow(() -> new BusinessRuleException("La categoría " + dto.getCategoriaId()
+                            + " aún no está disponible en Solicitudes (la copia es asíncrona). Reintente en unos segundos."));
+            dto.setCategoria(copia.getNombre());
+        }
+        if (dto.getCategoria() == null || dto.getCategoria().isBlank()) {
+            throw new BusinessRuleException("La categoría es obligatoria (categoriaId o categoria)");
+        }
         SolicitudResponseV1DTO creada = solicitudService.crearSolicitud(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(creada);
     }

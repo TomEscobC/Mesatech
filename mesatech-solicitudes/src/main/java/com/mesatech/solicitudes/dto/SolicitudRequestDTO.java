@@ -12,8 +12,10 @@ public class SolicitudRequestDTO {
     @NotBlank(message = "La descripción de la solicitud es obligatoria")
     private String descripcion;
 
-    @NotBlank(message = "La categoría es obligatoria")
+    // Si viene categoriaId, la categoría se resuelve desde la copia local (categoria_copia) y se ignora este texto
     private String categoria;
+
+    private Long categoriaId;
 
     @NotBlank(message = "La prioridad es obligatoria")
     private String prioridad;
@@ -54,6 +56,14 @@ public class SolicitudRequestDTO {
 
     public void setCategoria(String categoria) {
         this.categoria = categoria;
+    }
+
+    public Long getCategoriaId() {
+        return categoriaId;
+    }
+
+    public void setCategoriaId(Long categoriaId) {
+        this.categoriaId = categoriaId;
     }
 
     public String getPrioridad() {

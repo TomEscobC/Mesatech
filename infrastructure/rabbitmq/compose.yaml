@@ -1,0 +1,26 @@
+# RabbitMQ de MesaTech Cloud - EC2-C (Ubuntu 24.04, Docker Engine + plugin Compose)
+# Credenciales en .env (no versionado). Ver .env.example
+services:
+  rabbitmq:
+    image: rabbitmq:4.0.9-management        # etiqueta explícita, incluye interfaz de administración
+    container_name: rabbitmq
+    hostname: rabbitmq-mesatech             # hostname estable: RabbitMQ guarda sus datos bajo este nombre de nodo
+    restart: unless-stopped                 # política de reinicio
+    ports:
+      - "5672:5672"                         # AMQP (solo desde SG de EC2-A y EC2-B)
+      - "15672:15672"                       # Administración HTTP (solo desde IP /32 administrativa)
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_ADMIN_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_ADMIN_PASSWORD}
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbitmq_management load_definitions \"/etc/rabbitmq/definitions.json\""
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq     # volumen persistente (mensajes y metadatos sobreviven a recrear el contenedor)
+      - ./definitions.json:/etc/rabbitmq/definitions.json:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  rabbitmq_data:
