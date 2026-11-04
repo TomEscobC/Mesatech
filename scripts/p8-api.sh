@@ -24,8 +24,8 @@ estados)         T="$(tok ${ROL:-admin})"; echo "===== [P8.5] Regla de estados: 
                  echo '$ PUT /v1/solicitudes/'$ID'/estado  {"nuevoEstado":"RESUELTA"}'
                  show PUT /v1/solicitudes/$ID/estado "$T" '{"nuevoEstado":"RESUELTA","usuario":"admin"}';;
 v1v2)            T="$(tok ${ROL:-admin})"; echo "===== [P8.6] v1 y v2 coexisten ====="; date -u +"%Y-%m-%d %H:%M:%S UTC"
-                 for v in v1 v2; do echo "\$ curl -s $API/$v/solicitudes?size=1  (primer objeto)"
+                 for v in v1 v2; do echo "\$ curl -s $API/$v/solicitudes  (campos del primer objeto)"
                    curl -s "$API/$v/solicitudes" -H "Authorization: Bearer $T" -o /tmp/p8_$v.json -w "HTTP %{http_code}\n"
-                   python3 -c 'import json,sys; d=json.load(open("/tmp/p8_'$v'.json")); d=d[0] if isinstance(d,list) else d.get("content",[d])[0]; print("campos:",", ".join(d.keys()))' | cut -c1-220; rm -f /tmp/p8_$v.json; done;;
+                   python3 -c 'import json,sys; d=json.load(open("/tmp/p8_'$v'.json")); d=d[0] if isinstance(d,list) else d.get("content",[d])[0]; print("campos:",", ".join(d.keys()))' | cut -c1-330; rm -f /tmp/p8_$v.json; done;;
 *) echo "uso: bash scripts/p8-api.sh sin-token | token-invalido | cliente-403 | estados | v1v2";;
 esac
